@@ -45,6 +45,8 @@ interface AdicionarDespesaSheetProps {
   onExpenseAdded?: () => void
 }
 
+type SplitMethod = 'equal' | 'percentage' | 'parts'
+
 export function AdicionarDespesaSheet({
   groupId,
   members,
@@ -56,6 +58,9 @@ export function AdicionarDespesaSheet({
   const [error, setError] = useState<string | null>(null)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [selectedMembers, setSelectedMembers] = useState<string[]>(members.map(m => m.user_id))
+  const [splitMethod, setSplitMethod] = useState<SplitMethod>('equal')
+  const [totalParts, setTotalParts] = useState<number>(100)
+  const [customSplits, setCustomSplits] = useState<Record<string, number>>({})
   const router = useRouter()
   const supabase = createClient()
 
@@ -73,6 +78,23 @@ export function AdicionarDespesaSheet({
   const onSubmit = async (data: AddExpenseFormData) => {
     setIsLoading(true)
     setError(null)
+
+    // Validar divisão customizada
+    if (splitMethod === 'percentage') {
+      const total = Object.values(customSplits).reduce((sum, val) => sum + val, 0)
+      if (Math.abs(total - 100) > 0.01) {
+        setError('A soma das porcentagens deve ser igual a 100%')
+        setIsLoading(false)
+        return
+      }
+    } else if (splitMethod === 'parts') {
+      const total = Object.values(customSplits).reduce((sum, val) => sum + val, 0)
+      if (total !== totalParts) {
+        setError(`A soma das partes deve ser igual a ${totalParts}`)
+        setIsLoading(false)
+        return
+      }
+    }
 
     try {
       let receiptUrl: string | null = null
@@ -125,8 +147,30 @@ export function AdicionarDespesaSheet({
         throw expenseError
       }
 
-      // Dividir despesa igualmente entre os membros selecionados
-      const splits = splitExpenseEqually(data.amount, selectedMembers)
+      // Calcular divisões com base no método selecionado
+      let splits: Array<{ user_id: string; amount_owed: number }>
+
+      if (splitMethod === 'equal') {
+        splits = splitExpenseEqually(data.amount, selectedMembers)
+      } else if (splitMethod === 'percentage') {
+        // Dividir por porcentagem
+        splits = selectedMembers.map(userId => {
+          const percentage = customSplits[userId] || 0
+          return {
+            user_id: userId,
+            amount_owed: (data.amount * percentage) / 100
+          }
+        })
+      } else {
+        // Dividir por partes
+        splits = selectedMembers.map(userId => {
+          const parts = customSplits[userId] || 0
+          return {
+            user_id: userId,
+            amount_owed: (data.amount * parts) / totalParts
+          }
+        })
+      }
 
       console.log('Criando divisões:', {
         expenseId: expense.id,
@@ -324,47 +368,152 @@ export function AdicionarDespesaSheet({
             />
 
             <div className="space-y-3">
+              <FormLabel>Método de Divisão</FormLabel>
+              <Select value={splitMethod} onValueChange={(value: SplitMethod) => {
+                setSplitMethod(value)
+                setCustomSplits({})
+                if (value === 'equal') {
+                  setSelectedMembers(members.map(m => m.user_id))
+                }
+              }}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="equal">Dividir Igualmente</SelectItem>
+                  <SelectItem value="percentage">Por Porcentagem (%)</SelectItem>
+                  <SelectItem value="parts">Por Partes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {splitMethod === 'parts' && (
+              <div className="space-y-2">
+                <FormLabel>Total de Partes</FormLabel>
+                <Input
+                  type="number"
+                  min="1"
+                  value={totalParts}
+                  onChange={(e) => setTotalParts(parseInt(e.target.value) || 1)}
+                  placeholder="Ex: 10 (pedaços do bolo)"
+                />
+                <p className="text-xs text-gray-500">
+                  Defina o total de partes (ex: 10 pedaços de bolo)
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-3">
               <FormLabel>Dividir entre</FormLabel>
               <div className="border rounded-md p-4 space-y-3 max-h-60 overflow-y-auto">
                 {members.map((member) => (
-                  <div key={member.user_id} className="flex items-center space-x-3">
-                    <Checkbox
-                      id={`member-${member.user_id}`}
-                      checked={selectedMembers.includes(member.user_id)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedMembers([...selectedMembers, member.user_id])
-                        } else {
-                          // Impedir desmarcar se for o único selecionado
-                          if (selectedMembers.length > 1) {
-                            setSelectedMembers(selectedMembers.filter(id => id !== member.user_id))
+                  <div key={member.user_id} className="space-y-2">
+                    <div className="flex items-center space-x-3">
+                      <Checkbox
+                        id={`member-${member.user_id}`}
+                        checked={selectedMembers.includes(member.user_id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedMembers([...selectedMembers, member.user_id])
+                            if (splitMethod === 'percentage') {
+                              setCustomSplits({ ...customSplits, [member.user_id]: 0 })
+                            } else if (splitMethod === 'parts') {
+                              setCustomSplits({ ...customSplits, [member.user_id]: 0 })
+                            }
+                          } else {
+                            // Impedir desmarcar se for o único selecionado
+                            if (selectedMembers.length > 1) {
+                              setSelectedMembers(selectedMembers.filter(id => id !== member.user_id))
+                              const newSplits = { ...customSplits }
+                              delete newSplits[member.user_id]
+                              setCustomSplits(newSplits)
+                            }
                           }
-                        }
-                      }}
-                    />
-                    <label
-                      htmlFor={`member-${member.user_id}`}
-                      className="flex items-center space-x-2 flex-1 cursor-pointer"
-                    >
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={member.profiles.avatar_url || ''} />
-                        <AvatarFallback className="text-xs">
-                          {member.profiles.full_name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm">{member.profiles.full_name}</span>
-                      {member.user_id === currentUserId && (
-                        <span className="text-xs text-gray-500">(Você)</span>
-                      )}
-                    </label>
+                        }}
+                      />
+                      <label
+                        htmlFor={`member-${member.user_id}`}
+                        className="flex items-center space-x-2 flex-1 cursor-pointer"
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={member.profiles.avatar_url || ''} />
+                          <AvatarFallback className="text-xs">
+                            {member.profiles.full_name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">{member.profiles.full_name}</span>
+                        {member.user_id === currentUserId && (
+                          <span className="text-xs text-gray-500">(Você)</span>
+                        )}
+                      </label>
+                    </div>
+
+                    {/* Campos de input para porcentagem ou partes */}
+                    {selectedMembers.includes(member.user_id) && splitMethod !== 'equal' && (
+                      <div className="ml-11">
+                        <Input
+                          type="number"
+                          min="0"
+                          step={splitMethod === 'percentage' ? '0.01' : '1'}
+                          max={splitMethod === 'percentage' ? '100' : totalParts}
+                          value={customSplits[member.user_id] !== undefined ? customSplits[member.user_id] : ''}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? 0 : parseFloat(e.target.value)
+                            setCustomSplits({ ...customSplits, [member.user_id]: value })
+                          }}
+                          placeholder={splitMethod === 'percentage' ? '0%' : '0 partes'}
+                          className="h-8"
+                        />
+                        {splitMethod === 'percentage' && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {form.watch('amount') > 0 &&
+                              `= R$ ${((form.watch('amount') * (customSplits[member.user_id] || 0)) / 100).toFixed(2)}`
+                            }
+                          </p>
+                        )}
+                        {splitMethod === 'parts' && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {form.watch('amount') > 0 && totalParts > 0 &&
+                              `= R$ ${((form.watch('amount') * (customSplits[member.user_id] || 0)) / totalParts).toFixed(2)}`
+                            }
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-gray-500">
-                {selectedMembers.length === members.length
-                  ? 'Todos os membros participam desta despesa'
-                  : `${selectedMembers.length} de ${members.length} membros selecionados`}
-              </p>
+
+              {/* Resumo */}
+              {splitMethod === 'equal' && (
+                <p className="text-xs text-gray-500">
+                  {selectedMembers.length === members.length
+                    ? 'Todos os membros participam desta despesa'
+                    : `${selectedMembers.length} de ${members.length} membros selecionados`}
+                </p>
+              )}
+
+              {splitMethod === 'percentage' && (
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-500">
+                    Total: {Object.values(customSplits).reduce((sum, val) => sum + val, 0).toFixed(2)}%
+                    {Object.values(customSplits).reduce((sum, val) => sum + val, 0) !== 100 && (
+                      <span className="text-amber-600 ml-2">⚠ Deve somar 100%</span>
+                    )}
+                  </p>
+                </div>
+              )}
+
+              {splitMethod === 'parts' && (
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-500">
+                    Total: {Object.values(customSplits).reduce((sum, val) => sum + val, 0)} de {totalParts} partes
+                    {Object.values(customSplits).reduce((sum, val) => sum + val, 0) !== totalParts && (
+                      <span className="text-amber-600 ml-2">⚠ Deve somar {totalParts} partes</span>
+                    )}
+                  </p>
+                </div>
+              )}
             </div>
 
             <FormField

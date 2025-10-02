@@ -190,25 +190,15 @@ export default async function GruposPage() {
       <main className="container mx-auto px-4 py-8 relative z-10">
         {/* Welcome Section */}
         <div className="mb-8 animate-fade-in">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-                Olá, {profile?.full_name?.split(' ')[0] || 'Usuário'}!
-                <Sparkles className="h-6 w-6 text-amber-500" />
-              </h2>
-              <p className="text-gray-600 mt-1 flex items-center gap-2">
-                {userGroups.length === 0 ? (
-                  'Comece criando seu primeiro grupo'
-                ) : (
-                  <>
-                    <Users className="h-4 w-4" />
-                    {userGroups.length} {userGroups.length === 1 ? 'grupo ativo' : 'grupos ativos'}
-                  </>
-                )}
-              </p>
-            </div>
+          <div className="flex flex-col items-center gap-4 mb-2">
+            <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+              Olá, {profile?.full_name?.split(' ')[0] || 'Usuário'}!
+              <Sparkles className="h-6 w-6 text-amber-500" />
+            </h2>
 
-            <CriarGrupoDialog />
+            <div className="w-full sm:w-64">
+              <CriarGrupoDialog />
+            </div>
           </div>
         </div>
 

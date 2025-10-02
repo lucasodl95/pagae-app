@@ -212,6 +212,11 @@ export default async function GrupoDetailPage({ params }: GrupoDetailPageProps) 
 
   console.log('Payment requests:', paymentRequests, paymentError)
 
+  // Calcular notificações de Saldos para o usuário atual
+  const userDebts = simplifiedTransactions.filter(t => t.from_user.id === user.id).length
+  const pendingConfirmations = (paymentRequests || []).filter(r => r.to_user === user.id).length
+  const saldosNotifications = userDebts + pendingConfirmations
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50">
       {/* Monitor para detectar se o grupo foi deletado */}
@@ -415,7 +420,17 @@ export default async function GrupoDetailPage({ params }: GrupoDetailPageProps) 
         <Tabs defaultValue="despesas" className="space-y-4">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="despesas" className="text-xs md:text-sm">Despesas</TabsTrigger>
-            <TabsTrigger value="saldos" className="text-xs md:text-sm">Saldos</TabsTrigger>
+            <TabsTrigger value="saldos" className="text-xs md:text-sm">
+              <span className="flex items-center gap-2">
+                Saldos
+                {saldosNotifications > 0 && (
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+                  </span>
+                )}
+              </span>
+            </TabsTrigger>
             <TabsTrigger value="dashboard" className="text-xs md:text-sm">Dashboard</TabsTrigger>
             <TabsTrigger value="membros" className="text-xs md:text-sm">Membros</TabsTrigger>
           </TabsList>
