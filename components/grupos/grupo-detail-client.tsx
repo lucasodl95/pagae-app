@@ -7,8 +7,9 @@ import { ExpenseWithDetails, GroupWithMembers, EXPENSE_CATEGORIES } from '@/type
 import { getCategoryConfig } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Calculator, Filter, X, Search } from 'lucide-react'
+import { Filter, X, Search } from 'lucide-react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { DivisionIcon } from '@/components/ui/division-icon'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -105,7 +106,7 @@ export function GrupoDetailClient({
     return (
       <Card>
         <CardContent className="text-center py-8">
-          <Calculator className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+          <DivisionIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-600">
             Nenhuma despesa registrada ainda
           </p>
@@ -192,7 +193,7 @@ export function GrupoDetailClient({
       {filteredExpenses.length === 0 ? (
         <Card>
           <CardContent className="text-center py-8">
-            <Calculator className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+            <DivisionIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-600">
               Nenhuma despesa encontrada com os filtros aplicados
             </p>

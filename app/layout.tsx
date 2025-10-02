@@ -33,9 +33,10 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <meta name="theme-color" content="#6366F1" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <link rel="alternate icon" href="/images/favicon.png" />
+        <link rel="apple-touch-icon" href="/images/icone-app.png" />
+        <meta name="theme-color" content="#8b5cf6" />
       </head>
       <body className={cn(inter.className, "min-h-screen bg-background")}>
         {children}

@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Card, CardContent } from '@/components/ui/card'
-import { Mail, Lock, Loader2, AlertCircle, Calculator } from 'lucide-react'
+import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
+import { DivisionIcon } from '@/components/ui/division-icon'
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -66,7 +67,7 @@ export function LoginForm() {
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl blur opacity-75"></div>
             <div className="relative gradient-primary p-4 rounded-2xl">
-              <Calculator className="h-10 w-10 text-white" />
+              <DivisionIcon className="h-10 w-10 text-white" />
             </div>
           </div>
         </div>

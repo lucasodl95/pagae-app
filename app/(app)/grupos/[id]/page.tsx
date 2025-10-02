@@ -14,8 +14,9 @@ import { GroupDashboard } from '@/components/grupos/grupo-dashboard'
 import { SpendingGoals } from '@/components/grupos/spending-goals'
 import { ExportReport } from '@/components/grupos/export-report'
 import { GroupDeletedMonitor } from '@/components/grupos/group-deleted-monitor'
-import { ArrowLeft, Users, Calculator, Settings, TrendingUp } from 'lucide-react'
+import { ArrowLeft, Users, Settings, TrendingUp } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
+import { DivisionIcon } from '@/components/ui/division-icon'
 import { simplifyTransactions } from '@/lib/calculations'
 import { MemberBalance } from '@/types/database'
 import Link from 'next/link'
@@ -329,7 +330,7 @@ export default async function GrupoDetailPage({ params }: GrupoDetailPageProps) 
             <CardHeader className="pb-3 relative">
               <div className="flex items-center mb-2">
                 <div className="bg-blue-500 p-2 rounded-lg">
-                  <Calculator className="h-5 w-5 text-white" />
+                  <DivisionIcon className="h-5 w-5 text-white" />
                 </div>
               </div>
               <CardDescription className="text-blue-700 font-medium">Total de Gastos</CardDescription>
@@ -471,7 +472,7 @@ export default async function GrupoDetailPage({ params }: GrupoDetailPageProps) 
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <div className="bg-gradient-to-br from-amber-500 to-orange-500 p-2 rounded-lg">
-                    <Calculator className="h-4 w-4 text-white" />
+                    <DivisionIcon className="h-4 w-4 text-white" />
                   </div>
                   Metas de Gastos
                 </CardTitle>

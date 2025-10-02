@@ -4,8 +4,9 @@ import { useState } from 'react'
 import { DespesaCard } from './despesa-card'
 import { ExpenseWithDetails } from '@/types/database'
 import { Card, CardContent } from '@/components/ui/card'
-import { Calculator, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DivisionIcon } from '@/components/ui/division-icon'
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import Image from 'next/image'
 
@@ -62,7 +63,7 @@ export function ListaDespesas({
     return (
       <Card>
         <CardContent className="text-center py-12">
-          <Calculator className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <DivisionIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             Nenhuma despesa registrada
           </h3>

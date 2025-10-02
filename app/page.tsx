@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import {
   Users,
-  Calculator,
   Smartphone,
   ArrowRight,
   TrendingDown,
@@ -14,6 +13,7 @@ import {
   PiggyBank
 } from 'lucide-react'
 import Link from 'next/link'
+import { DivisionIcon } from '@/components/ui/division-icon'
 
 export default function HomePage() {
   return (
@@ -36,15 +36,13 @@ export default function HomePage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl blur opacity-75 group-hover:opacity-100 transition-opacity"></div>
-                <div className="relative gradient-primary p-2 rounded-xl">
-                  <Calculator className="h-6 w-6 text-white" />
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl blur opacity-50"></div>
+                <div className="relative gradient-primary p-3 rounded-2xl shadow-xl">
+                  <DivisionIcon className="h-8 w-8 text-white" />
                 </div>
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-                Pagaê
-              </h1>
+              <span className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Pagaê</span>
               <Badge className="hidden sm:inline-flex bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0 shadow-lg animate-pulse">
                 <Sparkles className="h-3 w-3 mr-1" />
                 Novo
@@ -173,7 +171,7 @@ export default function HomePage() {
               <div className="mx-auto mb-4 relative">
                 <div className="absolute inset-0 bg-emerald-400 rounded-2xl blur-lg opacity-60 group-hover:opacity-90 transition-opacity"></div>
                 <div className="relative gradient-success p-5 rounded-2xl w-fit mx-auto shadow-lg">
-                  <Calculator className="h-10 w-10 text-white" />
+                  <DivisionIcon className="h-10 w-10 text-white" />
                 </div>
               </div>
               <CardTitle className="text-2xl font-bold">Algoritmo Inteligente</CardTitle>
@@ -298,7 +296,7 @@ export default function HomePage() {
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
                 <div className="relative gradient-primary p-3 rounded-xl shadow-xl">
-                  <Calculator className="h-6 w-6 text-white" />
+                  <DivisionIcon className="h-6 w-6 text-white" />
                 </div>
               </div>
               <span className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">Pagaê</span>

@@ -7,8 +7,9 @@ import { LogoutButton } from '@/components/auth/logout-button'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Calculator, User, Plus, Users, TrendingUp, Sparkles, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
+import { User, Plus, Users, TrendingUp, Sparkles, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
 import Link from 'next/link'
+import { DivisionIcon } from '@/components/ui/division-icon'
 import { simplifyTransactions } from '@/lib/calculations'
 import { MemberBalance } from '@/types/database'
 
@@ -158,14 +159,12 @@ export default async function GruposPage() {
           <div className="flex items-center justify-between">
             <Link href="/grupos" className="flex items-center space-x-3 group">
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl blur opacity-75 group-hover:opacity-100 transition-opacity"></div>
-                <div className="relative gradient-primary p-2 rounded-xl">
-                  <Calculator className="h-6 w-6 text-white" />
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-purple-600 rounded-2xl blur opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                <div className="relative gradient-primary p-2.5 rounded-2xl shadow-xl">
+                  <DivisionIcon className="h-7 w-7 text-white" />
                 </div>
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-                Pagaê
-              </h1>
+              <span className="text-2xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">Pagaê</span>
             </Link>
 
             <div className="flex items-center space-x-3">
@@ -220,7 +219,7 @@ export default async function GruposPage() {
               <div className="relative inline-block mb-6">
                 <div className="absolute inset-0 bg-gradient-to-r from-violet-400 to-purple-400 rounded-3xl blur-xl opacity-60 animate-pulse"></div>
                 <div className="relative bg-gradient-to-br from-violet-100 to-purple-100 p-8 rounded-3xl shadow-lg">
-                  <Calculator className="h-16 w-16 text-violet-600" />
+                  <DivisionIcon className="h-16 w-16 text-violet-600" />
                 </div>
               </div>
               <h3 className="text-3xl font-bold bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent mb-3">
