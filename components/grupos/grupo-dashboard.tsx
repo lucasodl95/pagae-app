@@ -72,95 +72,111 @@ export function GroupDashboard({ expenses, members, totalExpenses }: GroupDashbo
   return (
     <div className="space-y-6">
       {/* Métricas Rápidas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="hover-lift glass-card border-2">
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center text-xs">
-              <DollarSign className="h-3 w-3 mr-1" />
-              Média por pessoa
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+        <Card className="bg-gradient-to-br from-violet-50 to-purple-50 border-2 border-violet-200 hover:shadow-lg transition-all">
+          <CardHeader className="pb-2 pt-4">
+            <CardDescription className="flex items-center text-xs text-violet-700 font-medium">
+              <DollarSign className="h-3.5 w-3.5 mr-1" />
+              Média/pessoa
             </CardDescription>
-            <CardTitle className="text-2xl bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
+            <CardTitle className="text-xl md:text-2xl font-bold text-violet-900">
               {formatCurrency(avgPerPerson)}
             </CardTitle>
           </CardHeader>
         </Card>
 
-        <Card className="hover-lift glass-card border-2">
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center text-xs">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              Total de despesas
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 hover:shadow-lg transition-all">
+          <CardHeader className="pb-2 pt-4">
+            <CardDescription className="flex items-center text-xs text-blue-700 font-medium">
+              <TrendingUp className="h-3.5 w-3.5 mr-1" />
+              Despesas
             </CardDescription>
-            <CardTitle className="text-2xl text-gray-900">
+            <CardTitle className="text-xl md:text-2xl font-bold text-blue-900">
               {expenses.length}
             </CardTitle>
           </CardHeader>
         </Card>
 
-        <Card className="hover-lift glass-card border-2">
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center text-xs">
-              <Award className="h-3 w-3 mr-1" />
-              Categoria top
+        <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-2 border-amber-200 hover:shadow-lg transition-all">
+          <CardHeader className="pb-2 pt-4">
+            <CardDescription className="flex items-center text-xs text-amber-700 font-medium">
+              <Award className="h-3.5 w-3.5 mr-1" />
+              Top categoria
             </CardDescription>
-            <CardTitle className="text-lg text-gray-900 truncate">
+            <CardTitle className="text-xl md:text-2xl font-bold text-amber-900 truncate">
               {topCategory}
             </CardTitle>
           </CardHeader>
         </Card>
 
-        <Card className="hover-lift glass-card border-2">
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center text-xs">
-              <Calendar className="h-3 w-3 mr-1" />
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 hover:shadow-lg transition-all">
+          <CardHeader className="pb-2 pt-4">
+            <CardDescription className="flex items-center text-xs text-green-700 font-medium">
+              <Calendar className="h-3.5 w-3.5 mr-1" />
               Dia mais ativo
             </CardDescription>
-            <CardTitle className="text-lg text-gray-900">
+            <CardTitle className="text-xl md:text-2xl font-bold text-green-900">
               {mostActiveDay ? (mostActiveDay as any).day : 'N/A'}
             </CardTitle>
           </CardHeader>
         </Card>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-2 gap-4 md:gap-6">
         {/* Gráfico de Pizza - Gastos por Categoria */}
-        <Card className="hover-lift glass-card border-2">
+        <Card className="bg-white/80 backdrop-blur-sm border-2 hover:shadow-lg transition-all">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="text-base md:text-lg flex items-center gap-2">
               📊 Gastos por Categoria
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs md:text-sm">
               Distribuição das despesas por tipo
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             {expensesByCategory.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={expensesByCategory}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percentage }) => `${name} (${percentage}%)`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {expensesByCategory.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: any) => formatCurrency(value)}
-                    contentStyle={{
-                      background: 'rgba(255, 255, 255, 0.95)',
-                      border: '1px solid rgba(0,0,0,0.1)',
-                      borderRadius: '8px'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="space-y-4">
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={expensesByCategory}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {expensesByCategory.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: any) => formatCurrency(value)}
+                      contentStyle={{
+                        background: 'rgba(255, 255, 255, 0.95)',
+                        border: '1px solid rgba(0,0,0,0.1)',
+                        borderRadius: '8px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+
+                {/* Legenda customizada */}
+                <div className="grid grid-cols-2 gap-2">
+                  {expensesByCategory.map((entry, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full shrink-0"
+                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                      />
+                      <span className="text-xs text-gray-700 truncate">
+                        {entry.name} ({entry.percentage}%)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <div className="h-[300px] flex items-center justify-center text-gray-500">
                 Nenhuma despesa registrada ainda

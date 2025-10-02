@@ -43,97 +43,85 @@ export function DespesaCard({ expense, currentUserId, userRole, onImageClick, on
 
   return (
     <Card className="hover:shadow-md transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center space-x-3 flex-1">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={expense.paid_by_profile?.avatar_url || ''} />
-              <AvatarFallback className="text-sm">
-                {expense.paid_by_profile?.full_name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900 leading-tight">
-                {expense.description}
-              </h4>
-              <div className="flex items-center space-x-2 mt-1">
-                <Badge
-                  variant="secondary"
-                  className={`text-xs ${categoryConfig.bgColor} ${categoryConfig.color} flex items-center gap-1.5`}
-                >
-                  <categoryConfig.icon className="h-3.5 w-3.5" />
-                  {expense.category}
+      <CardContent className="p-3">
+        {/* Cabeçalho com descrição e valor */}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-sm text-gray-900 truncate mb-1">
+              {expense.description}
+            </h4>
+            <div className="flex items-center gap-1.5">
+              <Badge
+                variant="secondary"
+                className={`text-xs ${categoryConfig.bgColor} ${categoryConfig.color} flex items-center gap-1`}
+              >
+                <categoryConfig.icon className="h-3 w-3" />
+                {expense.category}
+              </Badge>
+              {isPaidByCurrentUser && (
+                <Badge variant="outline" className="text-xs">
+                  Você pagou
                 </Badge>
-                {isPaidByCurrentUser && (
-                  <Badge variant="outline" className="text-xs">
-                    Você pagou
-                  </Badge>
-                )}
-              </div>
+              )}
             </div>
           </div>
-          
-          <div className="text-right ml-4">
-            <p className="font-bold text-lg">
-              {formatCurrency(expense.amount)}
-            </p>
-            {amountOwed > 0 && (
-              <p className="text-sm text-gray-600">
-                Sua parte: {formatCurrency(amountOwed)}
-              </p>
-            )}
-          </div>
+
+          <p className="font-bold text-base text-gray-900 shrink-0">
+            {formatCurrency(expense.amount)}
+          </p>
         </div>
 
-        {/* Informações adicionais */}
-        <div className="flex items-center justify-between text-sm text-gray-600">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-1">
-              <User className="h-4 w-4" />
-              <span>
-                {expense.paid_by_profile?.full_name}
-                {isPaidByCurrentUser && ' (você)'}
+        {/* Informações e Ações em uma linha */}
+        <div className="flex items-center justify-between text-xs text-gray-600 gap-2">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5 shrink-0" />
+              <span className="whitespace-nowrap">
+                {(() => {
+                  // Se é apenas data (YYYY-MM-DD), usar como local, não UTC
+                  const dateStr = expense.expense_date
+                  if (dateStr.length === 10 && !dateStr.includes('T')) {
+                    const [year, month, day] = dateStr.split('-')
+                    return format(new Date(Number(year), Number(month) - 1, Number(day)), 'dd/MM/yy')
+                  }
+                  return format(new Date(dateStr + (dateStr.includes('Z') ? '' : 'Z')), 'dd/MM/yy')
+                })()}
               </span>
             </div>
-            
-            <div className="flex items-center space-x-1">
-              <Calendar className="h-4 w-4" />
-              <span>
-                {format(new Date(expense.expense_date), 'dd MMM yyyy', { locale: ptBR })}
+            <div className="flex items-center gap-1 min-w-0">
+              <User className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">
+                {expense.paid_by_profile?.full_name || 'Desconhecido'}
               </span>
             </div>
           </div>
 
           {/* Ações */}
-          <div className="flex items-center space-x-1">
-            {/* Nota fiscal */}
+          <div className="flex items-center gap-0.5 shrink-0">
             {expense.receipt_url && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onImageClick?.(getReceiptImageUrl(expense.receipt_url))}
-                className="h-8 px-2"
+                className="h-7 px-1.5"
+                title="Ver nota"
               >
-                <Receipt className="h-4 w-4 mr-1" />
-                Nota
+                <Receipt className="h-3.5 w-3.5" />
               </Button>
             )}
-            
-            {/* Editar despesa */}
+
             {canEdit && onEditClick && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onEditClick(expense)}
-                className="h-8 px-2"
+                className="h-7 px-1.5"
+                title="Editar"
               >
-                <Edit3 className="h-4 w-4 mr-1" />
-                Editar
+                <Edit3 className="h-3.5 w-3.5" />
               </Button>
             )}
 
-            {/* Deletar despesa */}
             {canEdit && (
               <DeletarDespesaDialog
                 expenseId={expense.id}
@@ -145,45 +133,30 @@ export function DespesaCard({ expense, currentUserId, userRole, onImageClick, on
         </div>
 
         {/* Divisão da despesa */}
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <div className="flex items-center justify-between text-sm">
+        <div className="mt-2 pt-2 border-t border-gray-100">
+          <div className="flex items-center justify-between text-xs">
             <span className="text-gray-600">
-              Dividido entre {expense.expense_splits.length} {expense.expense_splits.length === 1 ? 'pessoa' : 'pessoas'}
+              {expense.expense_splits.length} {expense.expense_splits.length === 1 ? 'pessoa' : 'pessoas'}
             </span>
-
-            <div className="flex -space-x-2">
-              {expense.expense_splits.slice(0, 4).map((split) => (
-                <Avatar key={split.id} className="h-6 w-6 border-2 border-white">
-                  <AvatarImage src={split.profiles?.avatar_url || ''} />
-                  <AvatarFallback className="text-xs bg-gray-100">
-                    {split.profiles?.full_name.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-              {expense.expense_splits.length > 4 && (
-                <div className="h-6 w-6 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center">
-                  <span className="text-xs text-gray-600">
-                    +{expense.expense_splits.length - 4}
-                  </span>
-                </div>
-              )}
-            </div>
+            <span className="text-gray-500">
+              {formatCurrency(expense.amount / expense.expense_splits.length)}/pessoa
+            </span>
           </div>
         </div>
 
-        {/* Seção de comentários expansível */}
-        <Collapsible open={showComments} onOpenChange={setShowComments} className="mt-3">
+        {/* Seção de comentários */}
+        <Collapsible open={showComments} onOpenChange={setShowComments} className="mt-2">
           <CollapsibleTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
-              className="w-full justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              className="w-full h-7 justify-center text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-50"
             >
-              <MessageCircle className="h-4 w-4 mr-2" />
+              <MessageCircle className="h-3.5 w-3.5 mr-1.5" />
               {showComments ? 'Ocultar' : 'Ver'} comentários
             </Button>
           </CollapsibleTrigger>
-          <CollapsibleContent className="mt-3">
+          <CollapsibleContent className="mt-2">
             <ExpenseComments expenseId={expense.id} currentUserId={currentUserId} />
           </CollapsibleContent>
         </Collapsible>

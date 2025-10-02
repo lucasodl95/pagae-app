@@ -129,62 +129,63 @@ export function GrupoDetailClient({
       </div>
 
       {/* Filtros */}
-      <div className="flex flex-wrap gap-3 items-center mb-4">
+      <div className="space-y-3 mb-4">
         <div className="flex items-center gap-2">
           <Filter className="h-4 w-4 text-gray-500" />
           <span className="text-sm text-gray-600">Filtrar por:</span>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="text-gray-600 hover:text-gray-900 ml-auto"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Limpar
+            </Button>
+          )}
         </div>
 
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Categoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas categorias</SelectItem>
-            {EXPENSE_CATEGORIES.map(cat => {
-              const config = getCategoryConfig(cat)
-              const Icon = config.icon
-              return (
-                <SelectItem key={cat} value={cat}>
-                  <div className="flex items-center gap-2">
-                    <div className={`p-1.5 rounded-lg ${config.bgColor}`}>
-                      <Icon className={`h-4 w-4 ${config.color}`} />
+        <div className="flex flex-col md:flex-row gap-3">
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-full md:w-[180px]">
+              <SelectValue placeholder="Categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas categorias</SelectItem>
+              {EXPENSE_CATEGORIES.map(cat => {
+                const config = getCategoryConfig(cat)
+                const Icon = config.icon
+                return (
+                  <SelectItem key={cat} value={cat}>
+                    <div className="flex items-center gap-2">
+                      <div className={`p-1.5 rounded-lg ${config.bgColor}`}>
+                        <Icon className={`h-4 w-4 ${config.color}`} />
+                      </div>
+                      <span>{cat}</span>
                     </div>
-                    <span>{cat}</span>
-                  </div>
-                </SelectItem>
-              )
-            })}
-          </SelectContent>
-        </Select>
+                  </SelectItem>
+                )
+              })}
+            </SelectContent>
+          </Select>
 
-        <Select value={dateFilter} onValueChange={setDateFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Período" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as datas</SelectItem>
-            <SelectItem value="today">Hoje</SelectItem>
-            <SelectItem value="week">Últimos 7 dias</SelectItem>
-            <SelectItem value="month">Últimos 30 dias</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={dateFilter} onValueChange={setDateFilter}>
+            <SelectTrigger className="w-full md:w-[180px]">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as datas</SelectItem>
+              <SelectItem value="today">Hoje</SelectItem>
+              <SelectItem value="week">Últimos 7 dias</SelectItem>
+              <SelectItem value="month">Últimos 30 dias</SelectItem>
+            </SelectContent>
+          </Select>
 
-        {hasActiveFilters && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearFilters}
-            className="text-gray-600 hover:text-gray-900"
-          >
-            <X className="h-4 w-4 mr-1" />
-            Limpar
-          </Button>
-        )}
-
-        <Badge variant="outline" className="ml-auto">
-          {filteredExpenses.length} {filteredExpenses.length === 1 ? 'despesa' : 'despesas'}
-        </Badge>
+          <Badge variant="outline" className="w-fit md:ml-auto">
+            {filteredExpenses.length} {filteredExpenses.length === 1 ? 'despesa' : 'despesas'}
+          </Badge>
+        </div>
       </div>
 
       {/* Lista de despesas */}

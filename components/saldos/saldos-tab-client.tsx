@@ -6,12 +6,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { CopyButton } from '@/components/ui/copy-button'
-import { ArrowRight, Check, X, Clock, PartyPopper } from 'lucide-react'
+import { ArrowRight, Check, X, Clock, Sparkles, TrendingUp, CheckCircle2, XCircle, AlertCircle } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { SimplifiedTransaction } from '@/types/database'
 import { toast } from 'sonner'
-import confetti from 'canvas-confetti'
 
 interface PaymentRequest {
   id: string
@@ -21,25 +20,54 @@ interface PaymentRequest {
   requested_at: string
 }
 
+interface Settlement {
+  id: string
+  from_user: string
+  to_user: string
+  amount: number
+  settled_at: string
+  from_profile: {
+    id: string
+    full_name: string
+    avatar_url: string | null
+  }
+  to_profile: {
+    id: string
+    full_name: string
+    avatar_url: string | null
+  }
+}
+
 interface SaldosTabClientProps {
   simplifiedTransactions: SimplifiedTransaction[]
   currentUserId: string
   groupId: string
   paymentRequests: PaymentRequest[]
+  settlements: Settlement[]
 }
 
-export function SaldosTabClient({ simplifiedTransactions, currentUserId, groupId, paymentRequests }: SaldosTabClientProps) {
+export function SaldosTabClient({ simplifiedTransactions, currentUserId, groupId, paymentRequests, settlements }: SaldosTabClientProps) {
   const [loading, setLoading] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
+  const formatDateTime = (dateString: string) => {
+    // Criar date em UTC e converter para local
+    const date = new Date(dateString + (dateString.includes('Z') ? '' : 'Z'))
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const year = date.getFullYear().toString().slice(-2)
+    const hours = date.getHours().toString().padStart(2, '0')
+    const minutes = date.getMinutes().toString().padStart(2, '0')
+    return `${day}/${month}/${year} às ${hours}:${minutes}`
+  }
+
   const handleMarkAsPaid = async (transaction: SimplifiedTransaction) => {
-    if (loading) return // Prevenir cliques duplicados
+    if (loading) return
 
     setLoading(transaction.to_user.id)
 
     try {
-      // Criar solicitação de pagamento
       const { error } = await supabase
         .from('payment_requests')
         .insert({
@@ -69,7 +97,8 @@ export function SaldosTabClient({ simplifiedTransactions, currentUserId, groupId
     }
   }
 
-  const triggerConfetti = () => {
+  const triggerConfetti = async () => {
+    const confetti = (await import('canvas-confetti')).default
     const count = 200
     const defaults = {
       origin: { y: 0.7 }
@@ -114,11 +143,10 @@ export function SaldosTabClient({ simplifiedTransactions, currentUserId, groupId
   }
 
   const handleConfirmPayment = async (requestId: string) => {
-    if (loading) return // Prevenir cliques duplicados
+    if (loading) return
     setLoading(requestId)
 
     try {
-      // Buscar dados da solicitação
       const request = paymentRequests.find(req => req.id === requestId)
       if (!request) {
         toast.error('Solicitação não encontrada')
@@ -126,7 +154,6 @@ export function SaldosTabClient({ simplifiedTransactions, currentUserId, groupId
         return
       }
 
-      // Criar settlement
       const { error: settlementError } = await supabase
         .from('settlements')
         .insert({
@@ -143,7 +170,6 @@ export function SaldosTabClient({ simplifiedTransactions, currentUserId, groupId
         return
       }
 
-      // Atualizar status da solicitação
       const { error: updateError } = await supabase
         .from('payment_requests')
         .update({
@@ -159,8 +185,7 @@ export function SaldosTabClient({ simplifiedTransactions, currentUserId, groupId
         return
       }
 
-      // Disparar confetes!
-      triggerConfetti()
+      await triggerConfetti()
 
       toast.success('🎉 Dívida quitada!', {
         description: `Você recebeu ${formatCurrency(request.amount)}!`
@@ -176,7 +201,7 @@ export function SaldosTabClient({ simplifiedTransactions, currentUserId, groupId
   }
 
   const handleRejectPayment = async (requestId: string) => {
-    if (loading) return // Prevenir cliques duplicados
+    if (loading) return
     setLoading(requestId)
 
     try {
@@ -207,190 +232,460 @@ export function SaldosTabClient({ simplifiedTransactions, currentUserId, groupId
     }
   }
 
-  console.log('SaldosTabClient - paymentRequests:', paymentRequests)
-  console.log('SaldosTabClient - simplifiedTransactions:', simplifiedTransactions)
-  console.log('SaldosTabClient - currentUserId:', currentUserId)
+  // Separar transações por envolvimento do usuário (apenas as do usuário atual)
+  const myDebts = simplifiedTransactions.filter(t => t.from_user.id === currentUserId)
+  const myCredits = simplifiedTransactions.filter(t => t.to_user.id === currentUserId)
+
+  // Separar settlements por envolvimento do usuário
+  const myPaidSettlements = settlements.filter(s => s.from_user === currentUserId)
+  const myReceivedSettlements = settlements.filter(s => s.to_user === currentUserId)
+  const hasSettlements = settlements.length > 0
 
   return (
-    <div className="space-y-3">
-      {simplifiedTransactions.length > 0 ? (
-        simplifiedTransactions.map((transaction, index) => {
-          const isUserInvolved = transaction.from_user.id === currentUserId || transaction.to_user.id === currentUserId
-          const isDebt = transaction.from_user.id === currentUserId
-          const isCredit = transaction.to_user.id === currentUserId
-
-          // Verificar se há solicitação pendente para esta transação
-          const pendingRequest = paymentRequests.find(
-            req => req.from_user === transaction.from_user.id &&
-                   req.to_user === transaction.to_user.id
-          )
-
-          console.log(`Transaction ${index}:`, {
-            from: transaction.from_user.id,
-            to: transaction.to_user.id,
-            pendingRequest,
-            isDebt,
-            isCredit
-          })
-
-          return (
-            <Card
-              key={index}
-              className={`transition-all ${
-                isUserInvolved
-                  ? isDebt
-                    ? 'border-red-200 bg-red-50 border-2'
-                    : 'border-green-200 bg-green-50 border-2'
-                  : 'border-gray-200'
-              }`}
-            >
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4 flex-1">
-                    {/* Devedor */}
-                    <div className="flex items-center space-x-2">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={transaction.from_user.avatar_url || ''} />
-                        <AvatarFallback className="bg-white">
-                          {transaction.from_user.full_name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-sm">
-                          {transaction.from_user.full_name}
-                          {transaction.from_user.id === currentUserId && (
-                            <span className="text-xs text-gray-500 ml-1">(você)</span>
-                          )}
-                        </p>
-                        <p className="text-xs text-red-600">Paga</p>
-                      </div>
-                    </div>
-
-                    {/* Seta e valor */}
-                    <div className="flex flex-col items-center">
-                      <ArrowRight className="h-5 w-5 text-gray-400" />
-                      <p className="font-bold text-lg mt-1">
-                        {formatCurrency(transaction.amount)}
-                      </p>
-                    </div>
-
-                    {/* Credor */}
-                    <div className="flex items-center space-x-2">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={transaction.to_user.avatar_url || ''} />
-                        <AvatarFallback className="bg-white">
-                          {transaction.to_user.full_name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-sm">
-                          {transaction.to_user.full_name}
-                          {transaction.to_user.id === currentUserId && (
-                            <span className="text-xs text-gray-500 ml-1">(você)</span>
-                          )}
-                        </p>
-                        <p className="text-xs text-green-600">Recebe</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Informações de PIX e ações */}
-                {isDebt && transaction.to_user.pix_key && (
-                  <div className="bg-white rounded-md p-3 border">
-                    <p className="text-xs text-gray-600 mb-1">Chave PIX de {transaction.to_user.full_name}:</p>
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-mono text-gray-900 truncate flex-1">
-                        {transaction.to_user.pix_key}
-                      </p>
-                      <CopyButton
-                        text={transaction.to_user.pix_key}
-                        size="sm"
-                        variant="outline"
-                        className="ml-2"
-                      >
-                        Copiar
-                      </CopyButton>
-                    </div>
-                  </div>
-                )}
-
-                {/* Botões de ação */}
-                <div className="flex gap-2">
-                  {isDebt && !pendingRequest && (
-                    <Button
-                      onClick={() => handleMarkAsPaid(transaction)}
-                      disabled={loading === transaction.to_user.id}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
-                      size="sm"
-                    >
-                      {loading === transaction.to_user.id ? (
-                        <>
-                          <Clock className="h-4 w-4 mr-2 animate-spin" />
-                          Enviando...
-                        </>
-                      ) : (
-                        <>
-                          <Check className="h-4 w-4 mr-2" />
-                          Marcar como Pago
-                        </>
-                      )}
-                    </Button>
-                  )}
-
-                  {isDebt && pendingRequest && (
-                    <div className="w-full text-center text-sm text-yellow-600 py-2 bg-yellow-50 rounded border border-yellow-200">
-                      <Clock className="h-4 w-4 inline mr-1" />
-                      Aguardando confirmação de {transaction.to_user.full_name}
-                    </div>
-                  )}
-
-                  {isCredit && !pendingRequest && (
-                    <div className="w-full text-center text-sm text-gray-600 py-2">
-                      <Clock className="h-4 w-4 inline mr-1" />
-                      Aguardando pagamento de {transaction.from_user.full_name}
-                    </div>
-                  )}
-
-                  {isCredit && pendingRequest && (
-                    <div className="w-full space-y-2">
-                      <div className="text-center text-sm text-blue-600 py-1 bg-blue-50 rounded border border-blue-200">
-                        💰 {transaction.from_user.full_name} confirmou o pagamento
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={() => handleConfirmPayment(pendingRequest.id)}
-                          className="flex-1 bg-green-600 hover:bg-green-700"
-                          size="sm"
-                        >
-                          <Check className="h-4 w-4 mr-2" />
-                          Confirmar Recebimento
-                        </Button>
-                        <Button
-                          onClick={() => handleRejectPayment(pendingRequest.id)}
-                          variant="outline"
-                          className="flex-1 border-red-200 text-red-600 hover:bg-red-50"
-                          size="sm"
-                        >
-                          <X className="h-4 w-4 mr-2" />
-                          Rejeitar
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })
-      ) : (
-        <Card>
-          <CardContent className="text-center py-8">
-            <p className="text-green-600 font-medium">
-              ✅ Todas as contas estão em dia!
+    <div className="space-y-6">
+      {/* Empty State */}
+      {simplifiedTransactions.length === 0 ? (
+        <Card className="border-2 border-dashed border-gray-200 bg-gradient-to-br from-green-50 to-emerald-50">
+          <CardContent className="text-center py-12">
+            <div className="relative inline-block mb-4">
+              <div className="absolute inset-0 bg-green-400 rounded-full blur-xl opacity-40 animate-pulse"></div>
+              <div className="relative bg-gradient-to-br from-green-100 to-emerald-100 p-6 rounded-full">
+                <CheckCircle2 className="h-12 w-12 text-green-600" />
+              </div>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">
+              Tudo certo por aqui! 🎉
+            </h3>
+            <p className="text-gray-600 max-w-md mx-auto">
+              Não há dívidas pendentes no grupo. Todas as contas estão em dia!
             </p>
           </CardContent>
         </Card>
+      ) : (
+        <>
+          {/* Minhas Dívidas */}
+          {myDebts.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <div className="bg-gradient-to-br from-red-500 to-rose-500 p-1.5 rounded-lg">
+                  <TrendingUp className="h-4 w-4 text-white" />
+                </div>
+                <h3 className="font-semibold text-gray-900">Você deve pagar</h3>
+                <span className="ml-auto bg-red-100 text-red-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                  {myDebts.length}
+                </span>
+              </div>
+
+              {myDebts.map((transaction, index) => {
+                const pendingRequest = paymentRequests.find(
+                  req => req.from_user === transaction.from_user.id &&
+                         req.to_user === transaction.to_user.id
+                )
+
+                return (
+                  <Card
+                    key={index}
+                    className="border-2 border-red-200 bg-gradient-to-br from-red-50 to-rose-50 overflow-hidden hover:shadow-lg transition-all duration-300"
+                  >
+                    <CardContent className="p-4 md:p-5">
+                      {/* Desktop Layout */}
+                      <div className="hidden md:flex items-center gap-6">
+                        {/* Você */}
+                        <div className="flex items-center gap-3 flex-1">
+                          <Avatar className="h-12 w-12 ring-2 ring-red-200">
+                            <AvatarImage src={transaction.from_user.avatar_url || ''} />
+                            <AvatarFallback className="bg-red-200 text-red-700 font-semibold">
+                              {transaction.from_user.full_name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-gray-900">Você</p>
+                            <p className="text-sm text-red-600 font-medium">Paga</p>
+                          </div>
+                        </div>
+
+                        {/* Valor e Seta */}
+                        <div className="flex items-center gap-4">
+                          <ArrowRight className="h-6 w-6 text-gray-400" />
+                          <div className="bg-white px-6 py-3 rounded-xl shadow-sm border-2 border-red-100">
+                            <p className="text-2xl font-bold text-gray-900">
+                              {formatCurrency(transaction.amount)}
+                            </p>
+                          </div>
+                          <ArrowRight className="h-6 w-6 text-gray-400" />
+                        </div>
+
+                        {/* Recebedor */}
+                        <div className="flex items-center gap-3 flex-1">
+                          <Avatar className="h-12 w-12 ring-2 ring-green-200">
+                            <AvatarImage src={transaction.to_user.avatar_url || ''} />
+                            <AvatarFallback className="bg-green-200 text-green-700 font-semibold">
+                              {transaction.to_user.full_name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-gray-900">{transaction.to_user.full_name}</p>
+                            <p className="text-sm text-green-600 font-medium">Recebe</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mobile Layout */}
+                      <div className="md:hidden space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-10 w-10 ring-2 ring-red-200">
+                              <AvatarImage src={transaction.from_user.avatar_url || ''} />
+                              <AvatarFallback className="bg-red-200 text-red-700 text-sm font-semibold">
+                                {transaction.from_user.full_name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-semibold text-sm">Você</p>
+                              <p className="text-xs text-red-600 font-medium">Deve pagar</p>
+                            </div>
+                          </div>
+                          <ArrowRight className="h-5 w-5 text-gray-400" />
+                        </div>
+
+                        <div className="bg-white px-4 py-3 rounded-xl shadow-sm border-2 border-red-100 text-center">
+                          <p className="text-xl font-bold text-gray-900">
+                            {formatCurrency(transaction.amount)}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <ArrowRight className="h-5 w-5 text-gray-400" />
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <p className="font-semibold text-sm text-right">{transaction.to_user.full_name.split(' ')[0]}</p>
+                              <p className="text-xs text-green-600 font-medium text-right">Vai receber</p>
+                            </div>
+                            <Avatar className="h-10 w-10 ring-2 ring-green-200">
+                              <AvatarImage src={transaction.to_user.avatar_url || ''} />
+                              <AvatarFallback className="bg-green-200 text-green-700 text-sm font-semibold">
+                                {transaction.to_user.full_name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* PIX Info */}
+                      {transaction.to_user.pix_key && (
+                        <div className="mt-4 bg-white rounded-xl p-3 md:p-4 border-2 border-violet-100 shadow-sm">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Sparkles className="h-4 w-4 text-violet-600" />
+                            <p className="text-xs md:text-sm font-semibold text-violet-900">
+                              Chave PIX de {transaction.to_user.full_name.split(' ')[0]}
+                            </p>
+                          </div>
+                          <div className="flex flex-col md:flex-row md:items-center gap-2">
+                            <code className="text-xs md:text-sm font-mono text-gray-900 bg-gray-50 px-3 py-2 rounded-lg flex-1 break-all">
+                              {transaction.to_user.pix_key}
+                            </code>
+                            <CopyButton
+                              text={transaction.to_user.pix_key}
+                              size="sm"
+                              className="w-full md:w-auto bg-violet-600 hover:bg-violet-700 text-white"
+                            >
+                              Copiar PIX
+                            </CopyButton>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Actions */}
+                      <div className="mt-4">
+                        {!pendingRequest ? (
+                          <Button
+                            onClick={() => handleMarkAsPaid(transaction)}
+                            disabled={loading === transaction.to_user.id}
+                            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                            size="lg"
+                          >
+                            {loading === transaction.to_user.id ? (
+                              <>
+                                <Clock className="h-4 w-4 md:h-5 md:w-5 mr-2 animate-spin" />
+                                Enviando...
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 mr-2" />
+                                Confirmar Pagamento
+                              </>
+                            )}
+                          </Button>
+                        ) : (
+                          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-4 text-center">
+                            <div className="flex items-center justify-center gap-2 mb-1">
+                              <Clock className="h-5 w-5 text-amber-600 animate-pulse" />
+                              <p className="font-semibold text-amber-900">Aguardando confirmação</p>
+                            </div>
+                            <p className="text-sm text-amber-700">
+                              {transaction.to_user.full_name.split(' ')[0]} precisa confirmar o recebimento
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Vão me Pagar */}
+          {myCredits.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-1.5 rounded-lg">
+                  <TrendingUp className="h-4 w-4 text-white rotate-180" />
+                </div>
+                <h3 className="font-semibold text-gray-900">Vão te pagar</h3>
+                <span className="ml-auto bg-green-100 text-green-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                  {myCredits.length}
+                </span>
+              </div>
+
+              {myCredits.map((transaction, index) => {
+                const pendingRequest = paymentRequests.find(
+                  req => req.from_user === transaction.from_user.id &&
+                         req.to_user === transaction.to_user.id
+                )
+
+                return (
+                  <Card
+                    key={index}
+                    className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 overflow-hidden hover:shadow-lg transition-all duration-300"
+                  >
+                    <CardContent className="p-4 md:p-5">
+                      {/* Desktop Layout */}
+                      <div className="hidden md:flex items-center gap-6">
+                        <div className="flex items-center gap-3 flex-1">
+                          <Avatar className="h-12 w-12 ring-2 ring-red-200">
+                            <AvatarImage src={transaction.from_user.avatar_url || ''} />
+                            <AvatarFallback className="bg-red-200 text-red-700 font-semibold">
+                              {transaction.from_user.full_name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-gray-900">{transaction.from_user.full_name}</p>
+                            <p className="text-sm text-red-600 font-medium">Deve pagar</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <ArrowRight className="h-6 w-6 text-gray-400" />
+                          <div className="bg-white px-6 py-3 rounded-xl shadow-sm border-2 border-green-100">
+                            <p className="text-2xl font-bold text-gray-900">
+                              {formatCurrency(transaction.amount)}
+                            </p>
+                          </div>
+                          <ArrowRight className="h-6 w-6 text-gray-400" />
+                        </div>
+
+                        <div className="flex items-center gap-3 flex-1">
+                          <Avatar className="h-12 w-12 ring-2 ring-green-200">
+                            <AvatarImage src={transaction.to_user.avatar_url || ''} />
+                            <AvatarFallback className="bg-green-200 text-green-700 font-semibold">
+                              {transaction.to_user.full_name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-gray-900">Você</p>
+                            <p className="text-sm text-green-600 font-medium">Vai receber</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Mobile Layout */}
+                      <div className="md:hidden space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-10 w-10 ring-2 ring-red-200">
+                              <AvatarImage src={transaction.from_user.avatar_url || ''} />
+                              <AvatarFallback className="bg-red-200 text-red-700 text-sm font-semibold">
+                                {transaction.from_user.full_name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-semibold text-sm">{transaction.from_user.full_name.split(' ')[0]}</p>
+                              <p className="text-xs text-red-600 font-medium">Deve pagar</p>
+                            </div>
+                          </div>
+                          <ArrowRight className="h-5 w-5 text-gray-400" />
+                        </div>
+
+                        <div className="bg-white px-4 py-3 rounded-xl shadow-sm border-2 border-green-100 text-center">
+                          <p className="text-xl font-bold text-gray-900">
+                            {formatCurrency(transaction.amount)}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <ArrowRight className="h-5 w-5 text-gray-400" />
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <p className="font-semibold text-sm text-right">Você</p>
+                              <p className="text-xs text-green-600 font-medium text-right">Vai receber</p>
+                            </div>
+                            <Avatar className="h-10 w-10 ring-2 ring-green-200">
+                              <AvatarImage src={transaction.to_user.avatar_url || ''} />
+                              <AvatarFallback className="bg-green-200 text-green-700 text-sm font-semibold">
+                                {transaction.to_user.full_name.charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Status */}
+                      <div className="mt-4">
+                        {!pendingRequest ? (
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 text-center">
+                            <div className="flex items-center justify-center gap-2 mb-1">
+                              <Clock className="h-5 w-5 text-blue-600 animate-pulse" />
+                              <p className="font-semibold text-blue-900">Aguardando pagamento</p>
+                            </div>
+                            <p className="text-sm text-blue-700">
+                              {transaction.from_user.full_name.split(' ')[0]} ainda não confirmou o pagamento
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            <div className="bg-gradient-to-r from-violet-50 to-purple-50 border-2 border-violet-200 rounded-xl p-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <Sparkles className="h-5 w-5 text-violet-600" />
+                                <p className="font-semibold text-violet-900">
+                                  {transaction.from_user.full_name.split(' ')[0]} confirmou o pagamento!
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                onClick={() => handleConfirmPayment(pendingRequest.id)}
+                                disabled={loading === pendingRequest.id}
+                                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold shadow-lg"
+                                size="lg"
+                              >
+                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                <span className="hidden md:inline">Confirmar</span>
+                                <span className="md:hidden">OK</span>
+                              </Button>
+                              <Button
+                                onClick={() => handleRejectPayment(pendingRequest.id)}
+                                disabled={loading === pendingRequest.id}
+                                variant="outline"
+                                className="border-2 border-red-300 text-red-700 hover:bg-red-50 font-semibold"
+                                size="lg"
+                              >
+                                <XCircle className="h-4 w-4 mr-2" />
+                                Rejeitar
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Histórico de Pagamentos */}
+      {hasSettlements && (
+        <div className="space-y-4 mt-8">
+          <div className="flex items-center gap-2 px-1">
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-500 p-1.5 rounded-lg">
+              <CheckCircle2 className="h-4 w-4 text-white" />
+            </div>
+            <h3 className="font-semibold text-gray-900">Contas já pagas</h3>
+            <span className="ml-auto bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+              {settlements.length}
+            </span>
+          </div>
+
+          <Card className="border-2 border-blue-100 bg-gradient-to-br from-blue-50/50 to-indigo-50/50">
+            <CardContent className="p-4 md:p-5">
+              <div className="space-y-3">
+                {/* Pagamentos que eu fiz */}
+                {myPaidSettlements.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide px-2">
+                      Você pagou
+                    </p>
+                    {myPaidSettlements.map((settlement) => (
+                      <div
+                        key={settlement.id}
+                        className="flex items-center justify-between bg-white rounded-lg p-3 border border-blue-100"
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="bg-green-100 p-2 rounded-full">
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              Pagamento para {settlement.to_profile.full_name.split(' ')[0]}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {formatDateTime(settlement.settled_at)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-green-600">
+                            {formatCurrency(Number(settlement.amount))}
+                          </p>
+                          <p className="text-xs text-gray-500">Pago</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Pagamentos que eu recebi */}
+                {myReceivedSettlements.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide px-2">
+                      Você recebeu
+                    </p>
+                    {myReceivedSettlements.map((settlement) => (
+                      <div
+                        key={settlement.id}
+                        className="flex items-center justify-between bg-white rounded-lg p-3 border border-blue-100"
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="bg-blue-100 p-2 rounded-full">
+                            <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              Recebido de {settlement.from_profile.full_name.split(' ')[0]}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {formatDateTime(settlement.settled_at)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-blue-600">
+                            +{formatCurrency(Number(settlement.amount))}
+                          </p>
+                          <p className="text-xs text-gray-500">Recebido</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   )

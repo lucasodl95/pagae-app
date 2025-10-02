@@ -229,16 +229,16 @@ export function EditarDespesaDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Despesa</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg md:text-xl">Editar Despesa</DialogTitle>
+          <DialogDescription className="text-sm">
             Altere os dados da despesa. A divisão será recalculada automaticamente.
           </DialogDescription>
         </DialogHeader>
-        
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 md:space-y-4">
             <FormField
               control={form.control}
               name="description"
@@ -360,29 +360,30 @@ export function EditarDespesaDialog({
 
             {/* Seleção de participantes */}
             <div className="space-y-2">
-              <FormLabel>Quem participa desta despesa?</FormLabel>
-              <div className="border rounded-md p-3 space-y-2 max-h-[200px] overflow-y-auto">
+              <FormLabel className="text-sm font-medium">Quem participa desta despesa?</FormLabel>
+              <div className="border rounded-lg p-2 md:p-3 space-y-1 max-h-[180px] md:max-h-[200px] overflow-y-auto bg-gray-50">
                 {members.map((member) => (
                   <div
                     key={member.user_id}
-                    className="flex items-center space-x-2 hover:bg-gray-50 p-2 rounded transition-colors"
+                    className="flex items-center space-x-2 hover:bg-white p-2 rounded-md transition-colors"
                   >
                     <Checkbox
                       id={`member-${member.user_id}`}
                       checked={selectedMembers.includes(member.user_id)}
                       onCheckedChange={() => handleToggleMember(member.user_id)}
+                      className="shrink-0"
                     />
                     <label
                       htmlFor={`member-${member.user_id}`}
-                      className="flex items-center space-x-2 flex-1 cursor-pointer"
+                      className="flex items-center space-x-2 flex-1 cursor-pointer min-w-0"
                     >
-                      <Avatar className="h-6 w-6">
+                      <Avatar className="h-7 w-7 shrink-0">
                         <AvatarImage src={member.profiles.avatar_url || ''} />
-                        <AvatarFallback className="text-xs">
+                        <AvatarFallback className="text-xs bg-purple-100 text-purple-700">
                           {member.profiles.full_name.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-sm">
+                      <span className="text-sm truncate">
                         {member.profiles.full_name}
                         {member.user_id === currentUserId && (
                           <span className="text-xs text-gray-500 ml-1">(Você)</span>
@@ -392,9 +393,18 @@ export function EditarDespesaDialog({
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-gray-500">
-                {selectedMembers.length} {selectedMembers.length === 1 ? 'participante selecionado' : 'participantes selecionados'}
-              </p>
+              <div className="flex items-center justify-between text-xs text-gray-500 px-1">
+                <span>
+                  {selectedMembers.length} {selectedMembers.length === 1 ? 'participante' : 'participantes'}
+                </span>
+                {selectedMembers.length > 0 && (
+                  <span className="font-medium text-gray-700">
+                    {form.watch('amount') ?
+                      `R$ ${(form.watch('amount') / selectedMembers.length).toFixed(2)} cada`
+                      : '—'}
+                  </span>
+                )}
+              </div>
             </div>
 
             {error && (
@@ -403,14 +413,15 @@ export function EditarDespesaDialog({
               </div>
             )}
 
-            <DialogFooter className="gap-2">
+            <DialogFooter className="flex-col sm:flex-row gap-2 pt-4">
               {canDelete && (
                 <Button
                   type="button"
                   variant="destructive"
                   onClick={handleDelete}
                   disabled={isLoading || isDeleting}
-                  className="mr-auto"
+                  className="w-full sm:w-auto sm:mr-auto"
+                  size="sm"
                 >
                   {isDeleting ? (
                     <>
@@ -425,29 +436,35 @@ export function EditarDespesaDialog({
                   )}
                 </Button>
               )}
-              
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={isLoading || isDeleting}
-              >
-                Cancelar
-              </Button>
-              
-              <Button 
-                type="submit" 
-                disabled={isLoading || isDeleting}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  'Salvar Alterações'
-                )}
-              </Button>
+
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isLoading || isDeleting}
+                  className="w-full sm:w-auto"
+                  size="sm"
+                >
+                  Cancelar
+                </Button>
+
+                <Button
+                  type="submit"
+                  disabled={isLoading || isDeleting}
+                  className="w-full sm:w-auto"
+                  size="sm"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    'Salvar Alterações'
+                  )}
+                </Button>
+              </div>
             </DialogFooter>
           </form>
         </Form>

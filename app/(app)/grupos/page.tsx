@@ -315,9 +315,13 @@ export default async function GruposPage() {
               <Sparkles className="h-5 w-5 text-violet-600" />
               Ações Rápidas
             </h3>
-            <div className="flex flex-wrap gap-3">
-              <CriarGrupoDialog />
-              <EntrarGrupoDialog />
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <div className="w-full sm:w-auto">
+                <CriarGrupoDialog />
+              </div>
+              <div className="w-full sm:w-auto">
+                <EntrarGrupoDialog />
+              </div>
             </div>
           </div>
         )}

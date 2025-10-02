@@ -131,7 +131,7 @@ export function EntrarGrupoDialog({ variant = 'outline', size = 'lg', className 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant={variant} size={size} className={`rounded-xl ${variant === 'outline' ? 'border-2' : ''} ${className}`}>
+        <Button variant={variant} size={size} className={`w-full sm:w-auto rounded-xl ${variant === 'outline' ? 'border-2' : ''} ${className}`}>
           <Plus className="h-5 w-5 mr-2" />
           Entrar com Código
         </Button>
